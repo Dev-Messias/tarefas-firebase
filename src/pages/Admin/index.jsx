@@ -5,17 +5,49 @@ import { auth, db } from '../../firebaseConnection';
 import { signOut } from 'firebase/auth';
 import { 
     addDoc,
-    collection
+    collection,
+    onSnapshot,
+    query,
+    orderBy,
+    where
  } from 'firebase/firestore';
 
 function Admin(){
     const [tarefaInput, setTarefaInput] = useState('');
     const [user, setUser] = useState({})
 
+    //para armazenar tarefas 
+    const [tarefas, setTarefas] = useState([])
+
     useEffect(() => {
         async function loadTarefas(){
             const userDetail = localStorage.getItem("@detailUser")
             setUser(JSON.parse(userDetail))
+
+            //buscando tarefas do usuario
+            if(userDetail){
+                const data = JSON.parse(userDetail);
+
+                const tarefaRef = collection(db, "tarefas")
+                const q = query(tarefaRef, orderBy("created", "desc"), where("userUid", "==", data?.uid))
+
+                const unsub = onSnapshot(q, (snapshot) => {
+                    let lista = [];
+
+                    //percorrendo a lista
+                    snapshot.forEach((doc)=>{
+                        lista.push({
+                            id: doc.id,//id do item
+                            tarefa: doc.data().tarefa,//propriedade do item
+                            userUid: doc.data().userUid
+                        })
+                    })
+
+                    console.log(lista)
+                    setTarefas(lista);
+                } )
+
+            }
         }
 
         loadTarefas();
